@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Livestream Starting Soon</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'mvc-teal': '#008489',
+                        'mvc-gold': '#FFC72C',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&family=EB+Garamond:ital@1&display=swap');
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Montserrat', sans-serif;
+            background-color: #050a0a;
+            color: white;
+            overflow: hidden; /* Perfect for iframes */
+        }
+
+        .serif {
+            font-family: 'EB Garamond', serif;
+        }
+
+        /* Cinematic Background */
+        .bg-cinematic {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(0, 132, 137, 0.6) 0%, rgba(5, 10, 10, 0.95) 100%), 
+                        url('https://images.unsplash.com/photo-1540835296355-c04feaeb6b4c?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
+            background-size: cover;
+            background-position: center;
+            filter: blur(8px);
+            transform: scale(1.05); /* Prevents blurred edges from showing */
+            z-index: -1;
+        }
+
+        /* Glass Panel */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Pulsing Standby Dot */
+        .pulse-dot {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.8); }
+        }
+
+        /* Subtle floating for the inner card */
+        .float-gentle {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex items-center justify-center p-4 sm:p-8">
+
+    <!-- Blurred Background -->
+    <div class="bg-cinematic"></div>
+
+    <!-- Mini Game Elements (Hidden by default) -->
+    <div id="scoreDisplay" class="absolute top-6 right-6 bg-white/10 backdrop-blur-md border border-white/20 px-5 py-2 rounded-2xl text-white font-bold tracking-widest text-sm opacity-0 pointer-events-none transition-opacity duration-500 z-50 shadow-lg">
+        SCORE: <span id="scoreVal" class="text-mvc-gold text-xl ml-2">0</span>
+    </div>
+    
+    <div id="gameCap" class="absolute text-6xl cursor-pointer select-none opacity-0 pointer-events-none transition-all duration-300 transform hover:scale-110 z-40" style="left: 50%; top: 50%;" onmousedown="catchCap(event)" ontouchstart="catchCap(event)">
+        🎓
+    </div>
+
+    <!-- Main Content Container -->
+    <div class="glass-card rounded-[2rem] p-8 md:p-12 w-full max-w-2xl text-center relative overflow-hidden float-gentle z-10">
+        
+        <!-- Decorative Top Line -->
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-mvc-gold to-transparent opacity-70"></div>
+
+        <!-- Standby Indicator -->
+        <div class="inline-flex items-center justify-center space-x-3 bg-white/10 px-6 py-2 rounded-full border border-white/20 mb-8">
+            <div class="w-3 h-3 bg-mvc-gold rounded-full pulse-dot shadow-[0_0_10px_#FFC72C]"></div>
+            <span class="uppercase tracking-[0.3em] text-[10px] font-black text-mvc-gold">Standby</span>
+        </div>
+
+        <!-- Headlines -->
+        <h1 class="serif italic text-4xl md:text-6xl mb-4 text-white drop-shadow-md">Hang Tight!</h1>
+        <div class="w-16 h-1 bg-mvc-teal mx-auto rounded-full mb-6"></div>
+        
+        <p class="text-lg md:text-xl font-light text-slate-300 leading-relaxed mb-10">
+            The broadcast hasn't started yet. Grab a seat, get comfortable, and we will be live right here shortly!
+        </p>
+
+        <!-- Live Clock (Provides visual feedback that the stream isn't frozen) -->
+        <div class="inline-block bg-black/40 border border-white/10 px-8 py-4 rounded-2xl">
+            <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Current Local Time</p>
+            <p id="live-clock" class="text-3xl md:text-4xl font-black text-white tracking-wider tabular-nums">
+                --:-- --
+            </p>
+        </div>
+
+        <!-- Mini Game Trigger -->
+        <div class="mt-8 pt-6 border-t border-white/10">
+            <button id="startGameBtn" onclick="startMiniGame()" class="group flex items-center justify-center space-x-3 w-full bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl py-4 px-4 transition-all duration-300">
+                <span class="text-2xl group-hover:animate-bounce">🎮</span>
+                <span class="text-xs uppercase tracking-widest font-bold text-slate-300 group-hover:text-white transition-colors">Bored? Play a mini-game</span>
+            </button>
+            <p id="gameInstructions" class="hidden text-xs text-mvc-gold mt-4 uppercase tracking-widest font-bold animate-pulse">
+                Catch the graduation cap!
+            </p>
+        </div>
+
+    </div>
+
+    <script>
+        // Update the clock every second so users know the page is active
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true 
+            });
+            document.getElementById('live-clock').innerText = timeString;
+        }
+
+        // Initialize clock
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        // --- CATCH THE CAP MINI-GAME LOGIC ---
+        let score = 0;
+        let capTimer;
+        let gameActive = false;
+
+        function startMiniGame() {
+            gameActive = true;
+            document.getElementById('startGameBtn').classList.add('hidden');
+            document.getElementById('gameInstructions').classList.remove('hidden');
+            document.getElementById('scoreDisplay').classList.remove('opacity-0', 'pointer-events-none');
+            
+            const cap = document.getElementById('gameCap');
+            cap.classList.remove('opacity-0', 'pointer-events-none');
+            
+            moveCap();
+        }
+
+        function moveCap() {
+            if (!gameActive) return;
+            const cap = document.getElementById('gameCap');
+            
+            // Keep the cap within the window bounds
+            const maxX = window.innerWidth - 80;
+            const maxY = window.innerHeight - 80;
+            
+            const newX = Math.max(20, Math.random() * maxX);
+            const newY = Math.max(20, Math.random() * maxY);
+            
+            cap.style.left = newX + 'px';
+            cap.style.top = newY + 'px';
+            
+            // Add a random rotation for fun styling
+            cap.style.transform = `rotate(${Math.random() * 60 - 30}deg)`;
+
+            clearTimeout(capTimer);
+            
+            // The game gets faster as your score goes up! (caps out at 600ms)
+            const speed = Math.max(600, 1500 - (score * 50)); 
+            capTimer = setTimeout(moveCap, speed);
+        }
+
+        function catchCap(e) {
+            e.preventDefault(); // Prevents double-firing on touch screens
+            if (!gameActive) return;
+            
+            score++;
+            document.getElementById('scoreVal').innerText = score;
+            
+            // Get exact coordinates for the confetti explosion
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+            if (e.type.startsWith('touch') && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            }
+            
+            spawnConfetti(clientX, clientY);
+            moveCap(); // Instantly move the cap away once caught
+        }
+
+        function spawnConfetti(x, y) {
+            const colors = ['#008489', '#FFC72C', '#ffffff']; // MVC Teal, Gold, and White
+            
+            for(let i = 0; i < 25; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'absolute w-3 h-3 rounded-full pointer-events-none z-50';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.left = x + 'px';
+                confetti.style.top = y + 'px';
+                document.body.appendChild(confetti);
+
+                // Math to make the particles explode outward with slight gravity
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = 50 + Math.random() * 150;
+                const tx = Math.cos(angle) * velocity;
+                const ty = Math.sin(angle) * velocity + 100; 
+
+                // Web Animations API for smooth, lightweight animation
+                confetti.animate([
+                    { transform: `translate(-50%, -50%) scale(1)`, opacity: 1 },
+                    { transform: `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(0)`, opacity: 0 }
+                ], {
+                    duration: 600 + Math.random() * 400,
+                    easing: 'cubic-bezier(0.25, 1, 0.5, 1)'
+                }).onfinish = () => confetti.remove(); // Clean up memory
+            }
+        }
+    </script>
+</body>
+</html>
